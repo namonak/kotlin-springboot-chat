@@ -1,11 +1,11 @@
-package com.example.kotlinspringbootchat
+package com.example.chat
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
 @SpringBootApplication
-class KotlinSpringbootChatApplication
+class ChatApplication
 
 fun main(args: Array<String>) {
-    runApplication<KotlinSpringbootChatApplication>(*args)
+    runApplication<ChatApplication>(*args)
 }

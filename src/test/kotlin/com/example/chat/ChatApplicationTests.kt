@@ -1,10 +1,10 @@
-package com.example.kotlinspringbootchat
+package com.example.chat
 
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 
 @SpringBootTest
-class KotlinSpringbootChatApplicationTests {
+class ChatApplicationTests {
 
     @Test
     fun contextLoads() {
