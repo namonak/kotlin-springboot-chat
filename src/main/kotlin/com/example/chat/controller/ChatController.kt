@@ -1,15 +1,15 @@
 package com.example.chat.controller
 
+import org.springframework.messaging.handler.annotation.MessageMapping
+import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.stereotype.Controller
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.ResponseBody
 
 @Controller
 class ChatController {
-    @PostMapping("/app/chat")
-    @ResponseBody
-    fun handleMessage(@RequestBody message: String): String {
-        return "Echo: $message"
+    @MessageMapping("/chat")
+    @SendTo("/topic/messages")
+    fun handleMessage(message: String): String {
+        println("Received message: $message")
+        return message
     }
 }
