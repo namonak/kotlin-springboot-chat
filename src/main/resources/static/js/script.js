@@ -13,12 +13,11 @@ const onConnected = () => {
     console.log('Connected to WebSocket');
 
     stompClient.subscribe('/topic/messages', (message) => {
-        const receivedMessage = message.body;
         //console.log('Received: ', receivedMessage);
+        const receivedMessage = JSON.parse(message.body);
         const messageElement = document.createElement('div');
         messageElement.classList.add('message');
-        messageElement.classList.add('own-message'); // 사용자가 보낸 메시지임을 표시하기 위해 클래스 추가
-        messageElement.textContent = receivedMessage;
+        messageElement.textContent = receivedMessage.sender + ': ' + receivedMessage.content;
         messageContainer.appendChild(messageElement);
     });
 };

@@ -8,11 +8,10 @@ class ChatRoomTest {
 
     @Test
     fun `test creating ChatRoom object`() {
-        val chatRoom = ChatRoom(1, "General", 100, null)
+        val chatRoom = ChatRoom(1, "General", null)
 
         assertThat(1).isEqualTo(chatRoom.id)
         assertThat("General").isEqualTo(chatRoom.name)
-        assertThat(100).isEqualTo(chatRoom.maxParticipants)
         assertNull(chatRoom.password)
     }
 }

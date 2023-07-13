@@ -1,16 +1,17 @@
 package com.example.chat.model
 
 import java.net.http.WebSocket
+import java.time.LocalDateTime
 import java.util.concurrent.CopyOnWriteArrayList
 
 data class ChatRoom(
     val id: Long,
     val name: String,
-    val maxParticipants: Int,
     val password: String?
 ) {
     private val participants: CopyOnWriteArrayList<User> = CopyOnWriteArrayList()
     private val webSockets: CopyOnWriteArrayList<WebSocket> = CopyOnWriteArrayList()
+    private val messageList: MutableList<ChatMessage> = mutableListOf()
 
     fun addParticipant(user: User) {
         participants.add(user)
@@ -28,13 +29,17 @@ data class ChatRoom(
         webSockets.remove(webSocket)
     }
 
-    fun receiveMessage(message: ChatMessage) {
-        // 채팅 메시지를 ChatRoom에 추가
-        // ...
+    fun broadcastMessage(message: ChatMessage) {
+        messageList.add(message)
 
-        // 웹소켓 리스트를 순회하며 각 소켓에 메시지를 브로드캐스팅
         for (webSocket in webSockets) {
             webSocket.sendText(message.content, true)
         }
+    }
+
+    fun sendMessage(sender: User, content: String) {
+        val timestamp = LocalDateTime.now()
+        val message = ChatMessage(sender.id, content, sender.username, timestamp)
+        broadcastMessage(message)
     }
 }
