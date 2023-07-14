@@ -6,6 +6,8 @@ import com.example.chat.model.User
 import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.stereotype.Controller
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.ResponseBody
 import java.time.LocalDateTime
 
 @Controller
@@ -21,5 +23,12 @@ class ChatController {
         chatRoom.broadcastMessage(chatMessage)
 
         return chatMessage
+    }
+
+    @GetMapping("/api/host-endpoint")
+    @ResponseBody
+    fun getHostEndpoint(): Map<String, String> {
+        val hostEndpoint = System.getenv("HOST_ENDPOINT")
+        return mapOf("hostEndpoint" to hostEndpoint)
     }
 }
