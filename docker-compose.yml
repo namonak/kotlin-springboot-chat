@@ -1,11 +1,9 @@
-version: '3.1'
-
+version: '3'
 services:
-  db:
-    image: postgres
-    restart: always
-    environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: chatapp
+  chatapp:
+    image: chatapp
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - 5432:5432
+      - 8080:8080
