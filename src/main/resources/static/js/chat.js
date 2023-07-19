@@ -1,6 +1,20 @@
+window.onload = function() {
+    const user = supabase.auth.user();
+
+    if (user) {
+        // 사용자가 로그인한 경우
+        console.log('User is signed in!');
+    } else {
+        // 사용자가 로그아웃한 경우
+        console.log('User is not signed in!');
+        window.location.href = "/login.html";
+    }
+};
+
 const messageInput = document.getElementById('message-input');
 const sendButton = document.getElementById('send-button');
 const messageContainer = document.getElementById('message-container');
+const logoutButton = document.getElementById('logout-button');
 
 let stompClient;  // 전역 범위로 선언
 
@@ -76,4 +90,10 @@ messageInput.addEventListener('keypress', (event) => {
         // 메시지 전송 함수 호출
         sendMessage();
     }
+});
+
+logoutButton.addEventListener('click', async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error('Error logging out:', error);
+    else window.location.href = "/login.html";
 });
