@@ -31,7 +31,7 @@ class ChatController {
         val sessionId = headerAccessor.sessionId
         val sender = users[headerAccessor.sessionId] // Get the user associated with the current session
         if (sender != null) {
-            val chatMessage = ChatMessage(1L, message.content, sender.username, LocalDateTime.now())
+            val chatMessage = ChatMessage(1L, message.content, message.sender, LocalDateTime.now())
             chatRoom.broadcastMessage(chatMessage)
             return chatMessage
         }

@@ -1,9 +1,23 @@
-window.onload = function() {
-    const user = supabase.auth.user();
+let user
+
+window.onload = async function() {
+    user = supabase.auth.user();
 
     if (user) {
         // 사용자가 로그인한 경우
         console.log('User is signed in!');
+        const { data, error } = await supabase
+        .from('user_profiles')
+        .select('nickname')
+        .eq('user_id', user.id)
+        .single();
+
+        if (error) {
+            console.error('Error fetching user profile:', error);
+        } else {
+            console.log('User nickname:', data.nickname);
+            user.nickname = data.nickname;  // 사용자 객체에 닉네임 추가
+        }
     } else {
         // 사용자가 로그아웃한 경우
         console.log('User is not signed in!');
@@ -26,7 +40,7 @@ const sendMessage = () => {
         const messageObject = {
             id: 1, // id 필드 추가
             content: message,
-            sender: "DummySender",
+            sender: user.nickname,  // 'DummySender' 대신 사용자의 닉네임 사용
             timestamp: new Date().toISOString() // timestamp 필드 추가
         };
         stompClient.send('/app/chat', {}, JSON.stringify(messageObject));
