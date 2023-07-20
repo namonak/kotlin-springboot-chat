@@ -7,6 +7,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         password
     })
     if (error) {
+        alert('로그인에 실패하였습니다: ' + error.message)
         console.error('Error: ', error.message)
     } else {
         // 로그인 성공, 채팅 페이지로 이동
