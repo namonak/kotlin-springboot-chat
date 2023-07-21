@@ -45,6 +45,9 @@ const sendMessage = () => {
         };
         stompClient.send('/app/chat', {}, JSON.stringify(messageObject));
         messageInput.value = '';
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+            messageInput.blur();  // 메시지를 보낸 후에는 입력 필드에 포커스를 주지 않습니다.
+        }
     }
 };
 
