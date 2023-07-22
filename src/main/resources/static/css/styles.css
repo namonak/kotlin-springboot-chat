@@ -58,3 +58,33 @@
     height: 256px;
     object-fit: cover;
 }
+
+.version {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 12px;
+    color: gray;
+}
+
+#chat-container {
+    position: relative;
+    top: 60px; /* Adjust this value as needed */
+}
+
+#user-info {
+    position: absolute;
+    top: 30px;
+    left: 10px;
+}
+
+#user-email {
+    display: inline-block;
+    font-size: 12px;
+    color: gray;
+    margin-right: 10px;
+}
+
+#profile-button {
+    display: inline-block;
+}
