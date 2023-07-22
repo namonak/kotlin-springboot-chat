@@ -9,7 +9,7 @@ class ChatMessageTest {
     @Test
     fun testChatMessage() {
         // Arrange
-        val messageId = 1L
+        val messageId = "id_0107"
         val content = "Hello, how are you?"
         val sender = "John"
         val timestamp = LocalDateTime.now()

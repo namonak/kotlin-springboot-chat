@@ -47,7 +47,7 @@ const sendMessage = () => {
     if (message && stompClient) {  // stompClient가 초기화된 상태인지 체크
         // 서버로 메시지 전송
         const messageObject = {
-            id: 1, // id 필드 추가
+            id: user.id, // id 필드 추가
             content: message,
             sender: user.nickname,  // 'DummySender' 대신 사용자의 닉네임 사용
             timestamp: new Date().toISOString() // timestamp 필드 추가
@@ -82,12 +82,27 @@ fetch('/api/host-endpoint', {
     const onConnected = () => {
         console.log('Connected to WebSocket');
 
-        stompClient.subscribe('/topic/messages', (message) => {
-            //console.log('Received: ', receivedMessage);
+        stompClient.subscribe('/topic/messages', async (message) => {
             const receivedMessage = JSON.parse(message.body);
+
+            // 프로필 이미지 가져오기
+            const profileImageUrl = await getProfileImage(receivedMessage.id);
+
             const messageElement = document.createElement('div');
             messageElement.classList.add('message');
-            messageElement.textContent = receivedMessage.sender + ': ' + receivedMessage.content;
+
+            // 프로필 이미지 추가
+            if (profileImageUrl) {
+                const profileImageElement = document.createElement('img');
+                profileImageElement.src = profileImageUrl;
+                profileImageElement.classList.add('profile-image');
+                messageElement.appendChild(profileImageElement);
+            }
+
+            const textElement = document.createElement('span');
+            textElement.textContent = receivedMessage.sender + ': ' + receivedMessage.content;
+            messageElement.appendChild(textElement);
+
             messageContainer.appendChild(messageElement);
         });
     };
@@ -138,3 +153,19 @@ profileButton.addEventListener('click', () => {
         window.location.href = "/profile.html";
     }
 });
+
+// 프로필 이미지를 가져오는 함수
+const getProfileImage = async (userId) => {
+    const { data, error } = await supabase
+    .storage
+    .from('profile_image')
+    .download(`${userId}_profile_image`);
+
+    if (error) {
+        console.error('Error fetching profile image:', error);
+        return null;
+    }
+
+    const url = URL.createObjectURL(data);
+    return url;
+};

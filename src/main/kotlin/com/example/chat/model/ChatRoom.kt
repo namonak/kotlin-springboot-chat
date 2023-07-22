@@ -36,10 +36,4 @@ data class ChatRoom(
             webSocket.sendText(message.content, true)
         }
     }
-
-    fun sendMessage(sender: User, content: String) {
-        val timestamp = LocalDateTime.now()
-        val message = ChatMessage(sender.id, content, sender.username, timestamp)
-        broadcastMessage(message)
-    }
 }
