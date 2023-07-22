@@ -23,6 +23,9 @@ window.onload = async function() {
                 console.log('Connected to WebSocket: ' + frame);
             });
         }
+
+        // Display user's email
+        document.getElementById('user-email').textContent = 'User: ' + user.email;
     } else {
         // 사용자가 로그아웃한 경우
         console.log('User is not signed in!');
