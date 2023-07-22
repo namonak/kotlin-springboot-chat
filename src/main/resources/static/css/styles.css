@@ -52,3 +52,9 @@
     height: 200px; /* 원하는 높이로 설정하세요 */
     overflow: auto; /* 내용이 넘칠 경우 스크롤 표시 */
 }
+
+#preview-image {
+    width: 256px;
+    height: 256px;
+    object-fit: cover;
+}

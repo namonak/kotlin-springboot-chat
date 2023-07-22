@@ -29,6 +29,7 @@ const messageInput = document.getElementById('message-input');
 const sendButton = document.getElementById('send-button');
 const messageContainer = document.getElementById('message-container');
 const logoutButton = document.getElementById('logout-button');
+const profileButton = document.getElementById('profile-button');
 
 let stompClient;  // 전역 범위로 선언
 
@@ -113,4 +114,15 @@ logoutButton.addEventListener('click', async () => {
     const { error } = await supabase.auth.signOut();
     if (error) console.error('Error logging out:', error);
     else window.location.href = "/login.html";
+});
+
+profileButton.addEventListener('click', () => {
+    if (stompClient) {
+        stompClient.disconnect(() => {
+            console.log('Disconnected from WebSocket');
+            window.location.href = "/profile.html";
+        });
+    } else {
+        window.location.href = "/profile.html";
+    }
 });
