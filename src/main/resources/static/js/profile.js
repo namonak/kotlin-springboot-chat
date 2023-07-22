@@ -62,3 +62,8 @@ document.getElementById('profile-form').addEventListener('submit', async (e) => 
     }
   }
 });
+
+document.getElementById('back-button').addEventListener('click', function(e) {
+  e.preventDefault();
+  window.history.back();
+});
