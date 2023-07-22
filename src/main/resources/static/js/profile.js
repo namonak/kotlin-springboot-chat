@@ -1,7 +1,17 @@
 window.onload = async function() {
   const user = supabase.auth.user();
   if (user) {
-    // 사용자가 로그인한 경우, 프로필 정보를 불러오거나 업데이트하는 코드를 여기에 작성합니다.
+    // 사용자가 로그인한 경우, 사용자 프로필 이미지를 불러옵니다.
+    const filePath = `${user.id}_profile_image`;
+    const { data, error } = await supabase.storage.from('profile_image').download(filePath);
+
+    if (error) {
+      console.error('Error downloading image:', error);
+    } else {
+      const url = URL.createObjectURL(data);
+      document.getElementById('preview-image').src = url;
+      document.getElementById('preview-image').style.display = 'block';
+    }
   } else {
     // 사용자가 로그아웃한 경우, 로그인 페이지로 리다이렉트합니다.
     window.location.href = "/login.html";
