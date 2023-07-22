@@ -2,6 +2,7 @@ window.onload = async function() {
   const user = supabase.auth.user();
   if (user) {
     // 사용자가 로그인한 경우, 사용자 프로필 이미지를 불러옵니다.
+    console.log('User is signed in!');
     const filePath = `${user.id}_profile_image`;
     const { data, error } = await supabase.storage.from('profile_image').download(filePath);
 
@@ -75,5 +76,5 @@ document.getElementById('profile-form').addEventListener('submit', async (e) => 
 
 document.getElementById('back-button').addEventListener('click', function(e) {
   e.preventDefault();
-  window.history.back();
+  window.location.href = "/chat.html";
 });

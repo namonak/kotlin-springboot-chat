@@ -2,7 +2,6 @@ let user
 
 window.onload = async function() {
     user = supabase.auth.user();
-
     if (user) {
         // 사용자가 로그인한 경우
         console.log('User is signed in!');
@@ -17,6 +16,12 @@ window.onload = async function() {
         } else {
             console.log('User nickname:', data.nickname);
             user.nickname = data.nickname;  // 사용자 객체에 닉네임 추가
+        }
+
+        if (!stompClient || !stompClient.connected) {
+            stompClient.connect({}, function(frame) {
+                console.log('Connected to WebSocket: ' + frame);
+            });
         }
     } else {
         // 사용자가 로그아웃한 경우
@@ -118,8 +123,12 @@ logoutButton.addEventListener('click', async () => {
 
 profileButton.addEventListener('click', () => {
     if (stompClient) {
-        stompClient.disconnect(() => {
-            console.log('Disconnected from WebSocket');
+        new Promise((resolve) => {
+            stompClient.disconnect(() => {
+                console.log('Disconnected from WebSocket');
+                resolve();
+            });
+        }).then(() => {
             window.location.href = "/profile.html";
         });
     } else {
