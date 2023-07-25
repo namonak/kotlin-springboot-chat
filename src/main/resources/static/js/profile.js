@@ -69,6 +69,17 @@ document.getElementById('profile-form').addEventListener('submit', async (e) => 
     } else {
       console.log('Image uploaded successfully');
       alert('프로필 이미지 업로드가 성공적으로 완료되었습니다.')
+
+      // 이미지 업로드 성공 후, 새로운 이미지 URL을 로컬 스토리지에 저장
+      const { data, error } = await supabase.storage.from('profile_image').download(filePath);
+      if (error) {
+        console.error('Error downloading image:', error);
+      } else {
+        const url = URL.createObjectURL(data);
+        console.log('Hannah, profile.js url:', url);
+        localStorage.setItem(`${user.id}_profile_image_url`, url);
+      }
+
       window.location.href = '/chat.html'
     }
   }

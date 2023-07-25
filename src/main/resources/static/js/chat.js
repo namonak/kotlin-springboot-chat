@@ -156,16 +156,41 @@ profileButton.addEventListener('click', () => {
 
 // 프로필 이미지를 가져오는 함수
 const getProfileImage = async (userId) => {
-    const { data, error } = await supabase
-    .storage
-    .from('profile_image')
-    .download(`${userId}_profile_image`);
+    // 이미지 URL을 캐싱하기 위한 로컬 스토리지 키
+    const localStorageKey = `${userId}_profile_image_url`;
 
-    if (error) {
-        console.error('Error fetching profile image:', error);
-        return null;
+    // 로컬 스토리지에서 이미지 URL을 가져옴
+    let url = localStorage.getItem(localStorageKey);
+
+    // 로컬 스토리지에 이미지 URL이 없는 경우, 이미지를 다운로드
+    if (!url) {
+        let { data, error } = await supabase
+        .storage
+        .from('profile_image')
+        .download(`${userId}_profile_image`);
+
+        // 파일이 없을 경우 default_profile_image.jpg 다운로드
+        if (error) {
+            console.error('Error fetching profile image:', error);
+            console.log('Fetching default profile image...');
+            const result = await supabase
+            .storage
+            .from('profile_image')
+            .download('default_profile_image.jpg');
+
+            if (result.error) {
+                console.error('Error fetching default profile image:', result.error);
+                return null;
+            }
+
+            data = result.data;
+        }
+
+        url = URL.createObjectURL(data);
+        console.log('Hannah, chat.js url: ', url);
+        // 이미지 URL을 로컬 스토리지에 캐싱
+        localStorage.setItem(localStorageKey, url);
     }
 
-    const url = URL.createObjectURL(data);
     return url;
 };
