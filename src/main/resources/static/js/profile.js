@@ -89,3 +89,32 @@ document.getElementById('back-button').addEventListener('click', function(e) {
   e.preventDefault();
   window.location.href = "/chat.html";
 });
+
+document.getElementById('reset-profile-image').addEventListener('click', async function(e) {
+  e.preventDefault();
+
+  const user = supabase.auth.user();
+  const filePath = `${user.id}_profile_image`;
+
+  // 서버에서 프로필 이미지 삭제
+  const { error: deleteError } = await supabase.storage.from('profile_image').remove([filePath]);
+  if (deleteError) {
+    console.error('Error deleting image:', deleteError);
+    alert('프로필 이미지 삭제에 실패하였습니다: ' + deleteError.message);
+    return;
+  }
+
+  // 로컬 스토리지에서 프로필 이미지 URL 삭제
+  localStorage.removeItem(`${user.id}_profile_image_url`);
+
+  // 기본 프로필 이미지로 세팅
+  const { data, error } = await supabase.storage.from('profile_image').download('default_profile_image.jpg');
+  if (error) {
+    console.error('Error downloading default profile image:', error);
+    alert('기본 프로필 이미지 로딩에 실패하였습니다: ' + error.message);
+    return;
+  }
+  const url = URL.createObjectURL(data);
+  document.getElementById('preview-image').src = url;
+  document.getElementById('preview-image').style.display = 'block';
+});
