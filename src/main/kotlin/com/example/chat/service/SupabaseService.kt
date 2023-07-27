@@ -33,4 +33,21 @@ class SupabaseService {
             { error -> logger.error("Error: $error") }
         )
     }
+
+    fun updateProfileImageStatus(userId: String, profileImageStatus: Boolean): Boolean {
+        val userProfile = mapOf("profile_image" to profileImageStatus)
+        val response = webClient.patch()
+            .uri("/rest/v1/user_profiles?user_id=eq.$userId")
+            .bodyValue(userProfile)
+            .retrieve()
+            .bodyToMono(String::class.java)
+
+        return try {
+            response.block()
+            true
+        } catch (e: Exception) {
+            logger.error("Error: $e")
+            false
+        }
+    }
 }

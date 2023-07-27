@@ -185,11 +185,8 @@ const getProfileImage = async (userId) => {
 
             data = result.data;
         }
-
-        url = URL.createObjectURL(data);
-        console.log('Hannah, chat.js url: ', url);
         // 이미지 URL을 로컬 스토리지에 캐싱
-        localStorage.setItem(localStorageKey, url);
+        localStorage.setItem(localStorageKey, URL.createObjectURL(data));
     }
 
     return url;

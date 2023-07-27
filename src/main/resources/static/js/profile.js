@@ -3,14 +3,26 @@ window.onload = async function() {
   if (user) {
     // 사용자가 로그인한 경우, 사용자 프로필 이미지를 불러옵니다.
     console.log('User is signed in!');
-    const filePath = `${user.id}_profile_image`;
+
+    // public.user_profiles 데이터베이스에서 profile_image 필드 확인
+    const { data: userProfile, error: userProfileError } = await supabase
+        .from('user_profiles')
+        .select('profile_image')
+        .eq('user_id', user.id)
+        .single();
+
+    if (userProfileError) {
+      console.error('Error fetching user profile:', userProfileError);
+      return;
+    }
+    console.log('userProfile.profile_image:', userProfile.profile_image);
+    const filePath = userProfile.profile_image ? `${user.id}_profile_image` : 'default_profile_image.jpg';
     const { data, error } = await supabase.storage.from('profile_image').download(filePath);
 
     if (error) {
       console.error('Error downloading image:', error);
     } else {
-      const url = URL.createObjectURL(data);
-      document.getElementById('preview-image').src = url;
+      document.getElementById('preview-image').src = URL.createObjectURL(data);
       document.getElementById('preview-image').style.display = 'block';
     }
   } else {
@@ -44,6 +56,16 @@ document.getElementById('profile-image').addEventListener('change', function(e) 
   }
 });
 
+async function updateProfileImageStatus(userId, profileImageStatus) {
+  return await fetch('/profile_image_status', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ userId: userId, profileImageStatus: profileImageStatus} )
+  });
+}
+
 document.getElementById('profile-form').addEventListener('submit', async (e) => {
   e.preventDefault()
 
@@ -75,12 +97,18 @@ document.getElementById('profile-form').addEventListener('submit', async (e) => 
       if (error) {
         console.error('Error downloading image:', error);
       } else {
-        const url = URL.createObjectURL(data);
-        console.log('Hannah, profile.js url:', url);
-        localStorage.setItem(`${user.id}_profile_image_url`, url);
+        localStorage.setItem(`${user.id}_profile_image_url`, URL.createObjectURL(data));
       }
 
-      window.location.href = '/chat.html'
+      const response = await updateProfileImageStatus(user.id, true);
+      if (!response.ok) {
+        console.error('Error: ', response.statusText)
+        alert('프로필 이미지 상태 저장에 실패하였습니다: ' + response.statusText)
+      } else {
+        // 프로필 이미지 상태 저장 성공, 채팅 페이지로 이동
+        alert('프로필 이미지 상태 저장이 성공적으로 완료되었습니다.')
+        window.location.href = '/chat.html'
+      }
     }
   }
 });
@@ -107,6 +135,16 @@ document.getElementById('reset-profile-image').addEventListener('click', async f
   // 로컬 스토리지에서 프로필 이미지 URL 삭제
   localStorage.removeItem(`${user.id}_profile_image_url`);
 
+  // public.user_profiles 데이터베이스의 profile_image 필드를 false로 업데이트
+  const { error: updateError } = await supabase
+      .from('user_profiles')
+      .update({ profile_image: false })
+      .eq('user_id', user.id);
+
+  if (updateError) {
+    console.error('Error updating profile_image:', updateError);
+  }
+
   // 기본 프로필 이미지로 세팅
   const { data, error } = await supabase.storage.from('profile_image').download('default_profile_image.jpg');
   if (error) {
@@ -114,7 +152,6 @@ document.getElementById('reset-profile-image').addEventListener('click', async f
     alert('기본 프로필 이미지 로딩에 실패하였습니다: ' + error.message);
     return;
   }
-  const url = URL.createObjectURL(data);
-  document.getElementById('preview-image').src = url;
+  document.getElementById('preview-image').src = URL.createObjectURL(data);
   document.getElementById('preview-image').style.display = 'block';
 });
