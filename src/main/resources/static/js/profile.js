@@ -1,32 +1,25 @@
 window.onload = async function() {
   const user = supabase.auth.user();
   if (user) {
-    // 사용자가 로그인한 경우, 사용자 프로필 이미지를 불러옵니다.
     console.log('User is signed in!');
 
-    // public.user_profiles 데이터베이스에서 profile_image 필드 확인
-    const { data: userProfile, error: userProfileError } = await supabase
-        .from('user_profiles')
-        .select('profile_image')
-        .eq('user_id', user.id)
-        .single();
+    const userProfile = await getUserProfile(user.id);
 
-    if (userProfileError) {
-      console.error('Error fetching user profile:', userProfileError);
-      return;
-    }
-    console.log('userProfile.profile_image:', userProfile.profile_image);
-    const filePath = userProfile.profile_image ? `${user.id}_profile_image` : 'default_profile_image.jpg';
-    const { data, error } = await supabase.storage.from('profile_image').download(filePath);
-
-    if (error) {
-      console.error('Error downloading image:', error);
+    let base64Image = localStorage.getItem(`${user.id}_profile_image`);
+    if (!base64Image) {
+      console.log('No cached profile image found, fetching from server')
+      const { data, error } = await supabase.storage.from('profile_image').download(userProfile.profile_image_name);
+      if (error) {
+        console.error('Error downloading image:', error);
+      } else {
+        loadAndDisplayImage(user.id, data);
+      }
     } else {
-      document.getElementById('preview-image').src = URL.createObjectURL(data);
+      console.log('Cached profile image found, using that instead')
+      document.getElementById('preview-image').src = base64Image;
       document.getElementById('preview-image').style.display = 'block';
     }
   } else {
-    // 사용자가 로그아웃한 경우, 로그인 페이지로 리다이렉트합니다.
     window.location.href = "/login.html";
   }
 };
@@ -41,8 +34,8 @@ document.getElementById('profile-image').addEventListener('change', function(e) 
       document.getElementById('preview-image').style.display = 'none'; // 이미지 미리보기 영역 초기화
       return;
     }
-    if (file.size > 3 * 1024 * 1024) { // 3MB
-      alert('이미지 파일의 크기가 너무 큽니다. (최대 3MB)');
+    if (file.size > 1024 * 1024) { // 1MB
+      alert('이미지 파일의 크기가 너무 큽니다. (최대 1MB)');
       e.target.value = ''; // 파일 입력 필드 초기화
       document.getElementById('preview-image').style.display = 'none'; // 이미지 미리보기 영역 초기화
       return;
@@ -55,16 +48,6 @@ document.getElementById('profile-image').addEventListener('change', function(e) 
     reader.readAsDataURL(file);
   }
 });
-
-async function updateProfileImageStatus(userId, profileImageStatus) {
-  return await fetch('/profile_image_status', {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ userId: userId, profileImageStatus: profileImageStatus} )
-  });
-}
 
 document.getElementById('profile-form').addEventListener('submit', async (e) => {
   e.preventDefault()
@@ -79,10 +62,9 @@ document.getElementById('profile-form').addEventListener('submit', async (e) => 
       return;
     }
 
-    // 사용자 ID와 "_profile_image"를 결합하여 파일 경로 생성
     const user = supabase.auth.user();
-    const filePath = `${user.id}_profile_image`;
-    console.log('filePath:', filePath);
+    const timestamp = Date.now();
+    const filePath = `ts_${timestamp}`;
     const { error } = await supabase.storage.from('profile_image').upload(filePath, file, { upsert: true });
 
     if (error) {
@@ -90,24 +72,15 @@ document.getElementById('profile-form').addEventListener('submit', async (e) => 
       alert('프로필 이미지 업로드에 실패하였습니다: ' + error.message)
     } else {
       console.log('Image uploaded successfully');
-      alert('프로필 이미지 업로드가 성공적으로 완료되었습니다.')
 
-      // 이미지 업로드 성공 후, 새로운 이미지 URL을 로컬 스토리지에 저장
-      const { data, error } = await supabase.storage.from('profile_image').download(filePath);
-      if (error) {
-        console.error('Error downloading image:', error);
-      } else {
-        localStorage.setItem(`${user.id}_profile_image_url`, URL.createObjectURL(data));
-      }
-
-      const response = await updateProfileImageStatus(user.id, true);
-      if (!response.ok) {
-        console.error('Error: ', response.statusText)
-        alert('프로필 이미지 상태 저장에 실패하였습니다: ' + response.statusText)
-      } else {
-        // 프로필 이미지 상태 저장 성공, 채팅 페이지로 이동
-        alert('프로필 이미지 상태 저장이 성공적으로 완료되었습니다.')
+      const updateSuccess = await updateProfileImageName(user.id, filePath);
+      if (updateSuccess) {
+        loadAndDisplayImage(user.id, file);
+        alert('프로필 이미지 변경이 성공적으로 완료되었습니다.')
         window.location.href = '/chat.html'
+      } else {
+        console.error('Error: ', response.statusText)
+        alert('프로필 이미지 변경에 실패하였습니다: ' + response.statusText)
       }
     }
   }
@@ -122,36 +95,115 @@ document.getElementById('reset-profile-image').addEventListener('click', async f
   e.preventDefault();
 
   const user = supabase.auth.user();
-  const filePath = `${user.id}_profile_image`;
+  if (user) {
+    const userProfile = await getUserProfile(user.id);
 
-  // 서버에서 프로필 이미지 삭제
-  const { error: deleteError } = await supabase.storage.from('profile_image').remove([filePath]);
-  if (deleteError) {
-    console.error('Error deleting image:', deleteError);
-    alert('프로필 이미지 삭제에 실패하였습니다: ' + deleteError.message);
-    return;
+    // 서버에서 프로필 이미지 삭제
+    const deleteSuccess = await deleteProfileImage(user.id, userProfile.profile_image_name)
+    if (!deleteSuccess) {
+      console.error('Error deleting image');
+      alert('프로필 이미지 삭제에 실패하였습니다.');
+      return;
+    }
+
+    // 로컬 스토리지에서 프로필 이미지 URL 삭제
+    localStorage.removeItem(`${user.id}_profile_image`);
+
+    // 기본 프로필 이미지로 세팅
+    const { data, error } = await supabase.storage.from('profile_image').download('default_profile_image.jpg');
+    if (error) {
+      console.error('Error downloading default profile image:', error);
+      alert('기본 프로필 이미지 로딩에 실패하였습니다: ' + error.message);
+      return;
+    }
+
+    loadAndDisplayImage(user.id, data);
+
+    const updateSuccess = await updateProfileImageName(user.id, 'default_profile_image.jpg');
+    if (updateSuccess) {
+      console.log('Profile image reset successfully');
+      //window.location.href = '/chat.html'
+    } else {
+      console.error('Error: ', response.statusText)
+      alert('프로필 이미지 초기화에 실패하였습니다: ' + response.statusText)
+    }
   }
-
-  // 로컬 스토리지에서 프로필 이미지 URL 삭제
-  localStorage.removeItem(`${user.id}_profile_image_url`);
-
-  // public.user_profiles 데이터베이스의 profile_image 필드를 false로 업데이트
-  const { error: updateError } = await supabase
-      .from('user_profiles')
-      .update({ profile_image: false })
-      .eq('user_id', user.id);
-
-  if (updateError) {
-    console.error('Error updating profile_image:', updateError);
-  }
-
-  // 기본 프로필 이미지로 세팅
-  const { data, error } = await supabase.storage.from('profile_image').download('default_profile_image.jpg');
-  if (error) {
-    console.error('Error downloading default profile image:', error);
-    alert('기본 프로필 이미지 로딩에 실패하였습니다: ' + error.message);
-    return;
-  }
-  document.getElementById('preview-image').src = URL.createObjectURL(data);
-  document.getElementById('preview-image').style.display = 'block';
 });
+
+function loadAndDisplayImage(userId, data) {
+  const reader = new FileReader();
+  reader.onloadend = function() {
+    if (typeof reader.result === 'string') {
+      localStorage.setItem(`${userId}_profile_image`, reader.result);
+      document.getElementById('preview-image').src = reader.result;
+      document.getElementById('preview-image').style.display = 'block';
+    } else {
+      console.error('Error: reader.result is not a string');
+    }
+  };
+  reader.readAsDataURL(data);
+}
+
+async function getUserProfile(userId) {
+  const { data: userProfile, error: userProfileError } = await supabase
+    .from('user_profiles')
+    .select('profile_image_name')
+    .eq('user_id', userId)
+    .single();
+
+  if (userProfileError) {
+    console.error('Error fetching user profile:', userProfileError);
+    return null;
+  }
+  console.log('userProfile.profile_image_name:', userProfile.profile_image_name);
+  return userProfile;
+}
+
+async function updateProfileImageName(userId, profileImageName) {
+  try {
+    const response = await fetch('/profile_image_name/update', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ userId: userId, name: profileImageName })
+    });
+
+    if (!response.ok) {
+      const errorMessage = await response.text();
+      console.error(`Error updating profile image: ${errorMessage}`);
+      return false;
+    }
+
+    console.log("Profile image status updated successfully.");
+    return true;
+  } catch (error) {
+    console.error(`An error occurred: ${error}`);
+    return false;
+  }
+}
+
+async function deleteProfileImage(userId, profileImageName) {
+  try {
+    const response = await fetch('/profile_image/delete', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ userId: userId, name: profileImageName} )
+    });
+
+    if (!response.ok) {
+      const errorMessage = await response.text();
+      console.error(`Error updating profile image: ${errorMessage}`);
+      return false;
+    }
+
+    console.log("Profile image status updated successfully.");
+    return true;
+
+  } catch (error) {
+    console.error(`An error occurred: ${error}`);
+    return false;
+  }
+}

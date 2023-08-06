@@ -11,7 +11,7 @@ data class SignupRequest(val userId: String, val nickname: String)
 
 @RestController
 private class SignupController(@Autowired private val supabaseService: SupabaseService) {
-    private val logger = LoggerFactory.getLogger(ChatController::class.java)
+    private val logger = LoggerFactory.getLogger(SignupController::class.java)
 
     @PostMapping("/signup")
     fun signup(@RequestBody signupRequest: SignupRequest) {

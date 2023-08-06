@@ -1,6 +1,5 @@
 package com.example.chat.service
 
-import com.example.chat.controller.ChatController
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -11,7 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient
 class SupabaseService {
     private val supabaseUrl: String = System.getenv("SUPABASE_URL") ?: "default_url"
     private val serviceRoleKey: String = System.getenv("SUPABASE_SERVICE_ROLE_KEY") ?: "default_key"
-    private val logger = LoggerFactory.getLogger(ChatController::class.java)
+    private val logger = LoggerFactory.getLogger(SupabaseService::class.java)
 
     private val webClient = WebClient.builder()
         .baseUrl(supabaseUrl)
@@ -34,10 +33,10 @@ class SupabaseService {
         )
     }
 
-    fun updateProfileImageStatus(userId: String, profileImageStatus: Boolean): Boolean {
-        val userProfile = mapOf("profile_image" to profileImageStatus)
+    fun updateProfileImageName(id: String, name: String): Boolean {
+        val userProfile = mapOf("profile_image_name" to name)
         val response = webClient.patch()
-            .uri("/rest/v1/user_profiles?user_id=eq.$userId")
+            .uri("/rest/v1/user_profiles?user_id=eq.$id")
             .bodyValue(userProfile)
             .retrieve()
             .bodyToMono(String::class.java)
@@ -46,7 +45,23 @@ class SupabaseService {
             response.block()
             true
         } catch (e: Exception) {
-            logger.error("Error: $e")
+            logger.error("Error: ${e.message}")
+            false
+        }
+    }
+
+    fun deleteProfileImage(name: String): Boolean {
+        val response = webClient.delete()
+            .uri("/storage/v1/object/profile_images/$name") // 경로 수정
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $serviceRoleKey")
+            .retrieve()
+            .bodyToMono(String::class.java)
+
+        return try {
+            response.block()
+            true
+        } catch (e: Exception) {
+            logger.error("Error: ${e.message}")
             false
         }
     }
