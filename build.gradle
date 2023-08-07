@@ -26,6 +26,9 @@ dependencies {
     if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('mac')) {
         implementation 'io.netty:netty-resolver-dns-native-macos:4.1.68.Final:osx-aarch_64'
     }
+    implementation 'io.github.jan-tennert.supabase:storage-kt:1.2.0'
+    implementation 'io.ktor:ktor-client-java-jvm:2.3.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.7.3'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }

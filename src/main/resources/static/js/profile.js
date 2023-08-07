@@ -1,7 +1,7 @@
 window.onload = async function() {
   const user = supabase.auth.user();
   if (user) {
-    console.log('User is signed in!');
+    console.log('User is signed in! User ID:', user.id);
 
     const userProfile = await getUserProfile(user.id);
 
@@ -98,6 +98,11 @@ document.getElementById('reset-profile-image').addEventListener('click', async f
   if (user) {
     const userProfile = await getUserProfile(user.id);
 
+    if (userProfile.profile_image_name === 'default_profile_image.jpg') {
+      alert('이미 기본 프로필 이미지를 사용 중입니다.');
+      return;
+    }
+
     // 서버에서 프로필 이미지 삭제
     const deleteSuccess = await deleteProfileImage(user.id, userProfile.profile_image_name)
     if (!deleteSuccess) {
@@ -175,7 +180,7 @@ async function updateProfileImageName(userId, profileImageName) {
       return false;
     }
 
-    console.log("Profile image status updated successfully.");
+    console.log("Profile image updated successfully.");
     return true;
   } catch (error) {
     console.error(`An error occurred: ${error}`);
@@ -195,11 +200,11 @@ async function deleteProfileImage(userId, profileImageName) {
 
     if (!response.ok) {
       const errorMessage = await response.text();
-      console.error(`Error updating profile image: ${errorMessage}`);
+      console.error(`Error deleting profile image: ${errorMessage}`);
       return false;
     }
 
-    console.log("Profile image status updated successfully.");
+    console.log("Profile image deleted successfully.");
     return true;
 
   } catch (error) {

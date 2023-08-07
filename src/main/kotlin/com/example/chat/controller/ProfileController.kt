@@ -24,7 +24,7 @@ class ProfileController(@Autowired private val supabaseService: SupabaseService)
     }
 
     @DeleteMapping("/profile_image/delete")
-    fun deleteProfileImage(@RequestBody profileImage: ProfileImage): ResponseEntity<String> {
+    suspend fun deleteProfileImage(@RequestBody profileImage: ProfileImage): ResponseEntity<String> {
         val result = supabaseService.deleteProfileImage(profileImage.name)
         return if (result) {
             ResponseEntity.ok("Profile image status deleted successfully.")

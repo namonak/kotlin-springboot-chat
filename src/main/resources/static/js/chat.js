@@ -4,7 +4,7 @@ window.onload = async function() {
     user = supabase.auth.user();
     if (user) {
         // 사용자가 로그인한 경우
-        console.log('User is signed in!');
+        console.log('User is signed in! User ID:', user.id);
         const { data, error } = await supabase
         .from('user_profiles')
         .select('nickname')

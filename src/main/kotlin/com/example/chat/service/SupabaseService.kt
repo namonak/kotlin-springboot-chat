@@ -1,10 +1,18 @@
 package com.example.chat.service
 
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.storage.Storage
+import io.github.jan.supabase.storage.storage
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction
 import org.springframework.web.reactive.function.client.WebClient
+import reactor.core.publisher.Mono
+import kotlin.time.Duration.Companion.seconds
+
+private const val SUPABASE_BUCKET_NAME = "profile_image"
 
 @Service
 class SupabaseService {
@@ -17,6 +25,11 @@ class SupabaseService {
         .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer $serviceRoleKey")
         .defaultHeader("apikey", serviceRoleKey)
         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+        .filter(ExchangeFilterFunction.ofRequestProcessor { clientRequest ->
+            logger.info("Request: {} {}", clientRequest.method(), clientRequest.url())
+            logger.info("Headers: {}", clientRequest.headers())
+            Mono.just(clientRequest)
+        })
         .build()
 
     fun createUserProfile(userId: String, nickname: String) {
@@ -50,15 +63,21 @@ class SupabaseService {
         }
     }
 
-    fun deleteProfileImage(name: String): Boolean {
-        val response = webClient.delete()
-            .uri("/storage/v1/object/profile_images/$name") // 경로 수정
-            .header(HttpHeaders.AUTHORIZATION, "Bearer $serviceRoleKey")
-            .retrieve()
-            .bodyToMono(String::class.java)
+    suspend fun deleteProfileImage(name: String): Boolean {
+        val client = createSupabaseClient(
+            supabaseUrl,
+            serviceRoleKey
+        ) {
+            install(Storage) {
+                transferTimeout = 90.seconds
+            }
+        }
+
+        logger.info("Deleting profile image $name")
 
         return try {
-            response.block()
+            val bucket = client.storage[SUPABASE_BUCKET_NAME]
+            bucket.delete(name)
             true
         } catch (e: Exception) {
             logger.error("Error: ${e.message}")
