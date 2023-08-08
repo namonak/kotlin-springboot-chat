@@ -17,9 +17,9 @@ class ProfileController(@Autowired private val supabaseService: SupabaseService)
     fun updateProfileImageName(@RequestBody profileImage: ProfileImage): ResponseEntity<String> {
         val result = supabaseService.updateProfileImageName(profileImage.userId, profileImage.name)
         return if (result) {
-            ResponseEntity.ok("Profile image status updated successfully.")
+            ResponseEntity.ok("Profile image name updated successfully.")
         } else {
-            ResponseEntity.badRequest().body("Failed to update profile image status.")
+            ResponseEntity.badRequest().body("Failed to update profile image name.")
         }
     }
 
@@ -27,9 +27,9 @@ class ProfileController(@Autowired private val supabaseService: SupabaseService)
     suspend fun deleteProfileImage(@RequestBody profileImage: ProfileImage): ResponseEntity<String> {
         val result = supabaseService.deleteProfileImage(profileImage.name)
         return if (result) {
-            ResponseEntity.ok("Profile image status deleted successfully.")
+            ResponseEntity.ok("Profile image deleted successfully.")
         } else {
-            ResponseEntity.badRequest().body("Failed to delete profile image status.")
+            ResponseEntity.badRequest().body("Failed to delete profile image.")
         }
     }
 }
