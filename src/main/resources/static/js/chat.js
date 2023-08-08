@@ -6,22 +6,16 @@ window.onload = async function() {
         // 사용자가 로그인한 경우
         console.log('User is signed in! User ID:', user.id);
         const { data, error } = await supabase
-        .from('user_profiles')
-        .select('nickname')
-        .eq('user_id', user.id)
-        .single();
+            .from('user_profiles')
+            .select('nickname')
+            .eq('user_id', user.id)
+            .single();
 
         if (error) {
             console.error('Error fetching user profile:', error);
         } else {
             console.log('User nickname:', data.nickname);
             user.nickname = data.nickname;  // 사용자 객체에 닉네임 추가
-        }
-
-        if (!stompClient || !stompClient.connected) {
-            stompClient.connect({}, function(frame) {
-                console.log('Connected to WebSocket: ' + frame);
-            });
         }
 
         // Display user's email
@@ -83,6 +77,7 @@ fetch('/api/host-endpoint', {
         console.log('Connected to WebSocket');
 
         stompClient.subscribe('/topic/messages', async (message) => {
+            console.log('Message received: ', message);
             const receivedMessage = JSON.parse(message.body);
 
             // 프로필 이미지 가져오기
@@ -124,7 +119,7 @@ messageInput.addEventListener('keypress', (event) => {
     // 엔터 키가 눌렸는지 확인 (event.keyCode === 13)
     // 이때, shift 키가 눌려진 상태가 아닌지도 확인 (event.shiftKey === false)
     // shift 키가 눌려진 상태에서 엔터 키를 누르면 줄바꿈을 해야 하므로 메시지를 전송하지 않습니다
-    if (event.keyCode === 13 && event.shiftKey === false) {
+    if (event.key === "Enter" && event.shiftKey === false) {
         // 기본 동작(여기서는 줄바꿈)을 취소
         event.preventDefault();
 
@@ -133,61 +128,48 @@ messageInput.addEventListener('keypress', (event) => {
     }
 });
 
+const disconnectWebSocket = () => {
+    if (stompClient) {
+        stompClient.disconnect(() => {
+            console.log('Disconnected from WebSocket');
+        });
+    }
+};
+
 logoutButton.addEventListener('click', async () => {
+    disconnectWebSocket();
     const { error } = await supabase.auth.signOut();
     if (error) console.error('Error logging out:', error);
     else window.location.href = "/login.html";
 });
 
 profileButton.addEventListener('click', () => {
-    if (stompClient) {
-        new Promise((resolve) => {
-            stompClient.disconnect(() => {
-                console.log('Disconnected from WebSocket');
-                resolve();
-            });
-        }).then(() => {
-            window.location.href = "/profile.html";
-        });
-    } else {
-        window.location.href = "/profile.html";
-    }
+    disconnectWebSocket();
+    window.location.href = "/profile.html";
 });
 
-// 프로필 이미지를 가져오는 함수
 const getProfileImage = async (userId) => {
-    // 이미지 URL을 캐싱하기 위한 로컬 스토리지 키
-    const localStorageKey = `${userId}_profile_image_url`;
+    const { data: userProfile, error: userProfileError } = await supabase
+        .from('user_profiles')
+        .select('profile_image_name')
+        .eq('user_id', userId)
+        .single();
 
-    // 로컬 스토리지에서 이미지 URL을 가져옴
-    let url = localStorage.getItem(localStorageKey);
-
-    // 로컬 스토리지에 이미지 URL이 없는 경우, 이미지를 다운로드
-    if (!url) {
-        let { data, error } = await supabase
-        .storage
-        .from('profile_image')
-        .download(`${userId}_profile_image`);
-
-        // 파일이 없을 경우 default_profile_image.jpg 다운로드
-        if (error) {
-            console.error('Error fetching profile image:', error);
-            console.log('Fetching default profile image...');
-            const result = await supabase
-            .storage
-            .from('profile_image')
-            .download('default_profile_image.jpg');
-
-            if (result.error) {
-                console.error('Error fetching default profile image:', result.error);
-                return null;
-            }
-
-            data = result.data;
-        }
-        // 이미지 URL을 로컬 스토리지에 캐싱
-        localStorage.setItem(localStorageKey, URL.createObjectURL(data));
+    if (userProfileError) {
+        console.error('Error fetching user profile:', userProfileError);
+        return null;
     }
 
-    return url;
+    let base64Image = localStorage.getItem(`${userId}_profile_image`);
+    if (!base64Image) {
+        console.log('No cached profile image found, fetching from server')
+        const { data, error } = await supabase.storage.from('profile_image').download(userProfile.profile_image_name);
+        if (error) {
+            console.error('Error downloading image:', error);
+        } else {
+            base64Image = await data.text(); // Assuming the data is in Base64 format
+            localStorage.setItem(`${userId}_profile_image`, base64Image);
+        }
+    }
+    return base64Image; // Returning the Base64 image string
 };
