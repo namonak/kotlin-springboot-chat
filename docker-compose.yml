@@ -2,7 +2,7 @@ version: '3'
 services:
   chatapp:
     container_name: chatapp
-    image: namonak/chatapp:0.0.6
+    image: namonak/chatapp:0.0.7
     build:
       context: .
       dockerfile: Dockerfile
