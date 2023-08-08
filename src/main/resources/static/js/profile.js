@@ -73,6 +73,19 @@ document.getElementById('profile-form').addEventListener('submit', async (e) => 
     } else {
       console.log('Image uploaded successfully');
 
+      const userProfile = await getUserProfile(user.id);
+
+      // 서버에서 프로필 이미지 삭제
+      const deleteSuccess = await deleteProfileImage(user.id, userProfile.profile_image_name)
+      if (!deleteSuccess) {
+        console.error('Error deleting image');
+        alert('프로필 이미지 삭제에 실패하였습니다.');
+        return;
+      }
+
+      // 로컬 스토리지에서 프로필 이미지 URL 삭제
+      localStorage.removeItem(`${user.id}_profile_image`);
+
       const updateSuccess = await updateProfileImageName(user.id, filePath);
       if (updateSuccess) {
         loadAndDisplayImage(user.id, file);
