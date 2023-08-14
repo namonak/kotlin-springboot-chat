@@ -84,4 +84,26 @@ class SupabaseService {
             false
         }
     }
+
+    suspend fun uploadProfileImage(name: String, bytes: ByteArray): Boolean {
+        val client = createSupabaseClient(
+            supabaseUrl,
+            serviceRoleKey
+        ) {
+            install(Storage) {
+                transferTimeout = 90.seconds
+            }
+        }
+
+        logger.info("Uploading profile image $name")
+
+        return try {
+            val bucket = client.storage[SUPABASE_BUCKET_NAME]
+            bucket.upload(name, bytes, upsert = true)
+            true
+        } catch (e: Exception) {
+            logger.error("Error: ${e.message}")
+            false
+        }
+    }
 }

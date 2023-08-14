@@ -84,7 +84,7 @@ document.getElementById('profile-image').addEventListener('change', function(e) 
 });
 
 document.getElementById('profile-form').addEventListener('submit', async (e) => {
-  e.preventDefault()
+  e.preventDefault();
 
   const fileInput = document.getElementById('profile-image');
   const file = fileInput.files[0];
@@ -92,41 +92,51 @@ document.getElementById('profile-form').addEventListener('submit', async (e) => 
   validateImage(file).then(async isValid => {
     if (isValid) {
       const user = supabase.auth.user();
-      const timestamp = Date.now();
-      const filePath = `ts_${timestamp}`;
-      const {error} = await supabase.storage.from('profile_image').upload(filePath, file, {upsert: true});
+      const filePath = `ts_${Date.now()}`;
 
-      if (error) {
-        console.error('Error uploading image:', error);
-        alert('프로필 이미지 업로드에 실패하였습니다: ' + error.message)
+      // FormData 객체를 생성하고 파일을 추가
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('filePath', filePath);
+
+      // 서버의 REST API를 호출하여 이미지 업로드
+      const response = await fetch('/profile_image/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        console.error('Error uploading image:', response.statusText);
+        alert('프로필 이미지 업로드에 실패하였습니다: ' + response.statusText);
+        return;
+      }
+
+      console.log('Image uploaded successfully');
+
+      const userProfile = await getUserProfile(user.id);
+
+      // 서버에서 프로필 이미지 삭제
+      const deleteSuccess = await deleteProfileImage(user.id, userProfile.profile_image_name);
+      if (!deleteSuccess) {
+        console.error('Error deleting image');
+        alert('프로필 이미지 삭제에 실패하였습니다.');
+        return;
+      }
+
+      // 로컬 스토리지에서 프로필 이미지 URL 삭제
+      localStorage.removeItem(`${user.id}_profile_image`);
+
+      const updateSuccess = await updateProfileImageName(user.id, filePath);
+      if (updateSuccess) {
+        loadAndDisplayImage(user.id, file);
+        alert('프로필 이미지 변경이 성공적으로 완료되었습니다.');
+        window.location.href = '/chat.html';
       } else {
-        console.log('Image uploaded successfully');
-
-        const userProfile = await getUserProfile(user.id);
-
-        // 서버에서 프로필 이미지 삭제
-        const deleteSuccess = await deleteProfileImage(user.id, userProfile.profile_image_name)
-        if (!deleteSuccess) {
-          console.error('Error deleting image');
-          alert('프로필 이미지 삭제에 실패하였습니다.');
-          return;
-        }
-
-        // 로컬 스토리지에서 프로필 이미지 URL 삭제
-        localStorage.removeItem(`${user.id}_profile_image`);
-
-        const updateSuccess = await updateProfileImageName(user.id, filePath);
-        if (updateSuccess) {
-          loadAndDisplayImage(user.id, file);
-          alert('프로필 이미지 변경이 성공적으로 완료되었습니다.')
-          window.location.href = '/chat.html'
-        } else {
-          console.error('Error: ', response.statusText)
-          alert('프로필 이미지 변경에 실패하였습니다: ' + response.statusText)
-        }
+        console.error('Error: ', response.statusText);
+        alert('프로필 이미지 변경에 실패하였습니다: ' + response.statusText);
       }
     } else {
-      console.log('Invalid image file')
+      console.log('Invalid image file');
       e.target.value = ''; // 파일 입력 필드 초기화
       document.getElementById('preview-image').style.display = 'none'; // 이미지 미리보기 영역 초기화
     }
